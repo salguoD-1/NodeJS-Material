@@ -159,3 +159,240 @@ app.listen(port, () => {
 Note que criamos uma rota para o caminho /cadastro. Quando o usuário acessar o caminho /cadastro, o handlebars irá renderizar o arquivo form.handlebars. Em seguida, o handlebars irá inserir o conteúdo do arquivo form.handlebars no arquivo main.handlebars. Por fim, o handlebars irá enviar o conteúdo do arquivo main.handlebars para o navegador. Além disso, usamos o método post para a rota /sucesso. O método post é usado para enviar dados para o servidor. Por fim, perceba que usamos o método render para renderizar o arquivo form.handlebars.
 
 NOTA: Não é possível acessar a rota utilizando o método post via barra de endereço do navegador(URL). O método post é utilizado para enviar dados para o servidor.
+
+## Reoganizando o projeto
+
+O projeto foi reoganizado para melhorar a estrutura do projeto.
+
+A pasta models foi criada para armazenar os modelos do banco de dados. O arquivo Post.js foi criado dentro da pasta models. O arquivo Post.js contém o modelo do banco de dados. Já o arquivo db.js possui as configurações do banco de dados.
+
+Foi criado um banco de dados para esse projeto. O nome do banco de dados é postapp e o nome da tabela é postagens.
+
+```sql
+mysql> USE postapp;
+Database changed
+mysql> SHOW TABLES;
++-------------------+
+| Tables_in_postapp |
++-------------------+
+| postagens         |
++-------------------+
+1 row in set (0.00 sec)
+
+mysql> DESCRIBE postagens;
++-----------+--------------+------+-----+---------+----------------+
+| Field     | Type         | Null | Key | Default | Extra          |
++-----------+--------------+------+-----+---------+----------------+
+| id        | int          | NO   | PRI | NULL    | auto_increment |
+| titulo    | varchar(255) | YES  |     | NULL    |                |
+| conteudo  | text         | YES  |     | NULL    |                |
+| createdAt | datetime     | NO   |     | NULL    |                |
+| updatedAt | datetime     | NO   |     | NULL    |                |
++-----------+--------------+------+-----+---------+----------------+
+5 rows in set (0.00 sec)
+```
+
+O banco de dados ficou descrito da forma acima.
+
+O arquivo db.js ficou da seguinte forma
+
+```js
+// Importamos o módulo dotenv
+const dotenv = require('dotenv');
+// Carrega as variáveis de ambiente
+dotenv.config({ path: '../.env' });
+// Importamos o módulo sequelize
+const Sequelize = require('sequelize');
+
+// Passamos as configurações do banco de dados
+const sequelize = new Sequelize(
+  process.env.DB_NAME,
+  process.env.DB_USER,
+  process.env.DB_PASS,
+  {
+    host: process.env.DB_HOST,
+    dialect: 'mysql',
+  }
+);
+// Testa a conexão com o banco de dados.
+sequelize
+  .authenticate()
+  .then(() => {
+    console.log('Conectado com sucesso.');
+  })
+  .catch((err) => {
+    console.log('Erro ao conectar: ', err);
+  });
+
+module.exports = {
+  Sequelize: Sequelize,
+  sequelize: sequelize,
+};
+```
+
+Já o arquivo Post.js ficou da seguinte forma
+
+```js
+const db = require('./db');
+
+const Post = db.sequelize.define('postagens', {
+  titulo: {
+    type: db.Sequelize.STRING,
+  },
+  conteudo: {
+    type: db.Sequelize.TEXT,
+  },
+});
+
+// Como a tabela ja foi criada, comentamos a linha abaixo.
+// Post.sync({ force: true });
+
+// Exportando o nosso model Post.
+module.exports = Post;
+```
+
+O nosso arquivo principal é o main.js. O arquivo main.js ficou da seguinte forma
+
+```js
+// Importamos o módulo do express
+const express = require('express');
+// Armazenamos a função express em uma constante
+const app = express();
+// Definimos a porta que o servidor irá escutar
+const port = 3000;
+// Importamos o módulo handlebars.
+const handlebars = require('express-handlebars');
+// Importamos o módulo body-parser
+const bodyParser = require('body-parser');
+// Importamos o módulo Post.
+const Post = require('../models/Post');
+
+// Configurações
+// Usando o handlebars como template engine.
+// O main é o nome do arquivo que será o template principal.
+app.engine('handlebars', handlebars.engine({ defaultLayout: 'main' }));
+app.set('view engine', 'handlebars');
+
+// Configurando o body-parser
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+
+// Rotas
+app.get('/', (req, res) => {
+  res.send('Hello World!');
+});
+
+app.get('/cadastro', (req, res) => {
+  res.render('formulario');
+});
+
+/* Como usamos o método POST no nosso formulário, é necessário mudar o método na rota. */
+app.post('/sucesso', (req, res) => {
+  // Passamos os dados do formulário para o model Post.
+  Post.create({
+    titulo: req.body.titulo,
+    conteudo: req.body.conteudo,
+  }) // Após o processamento dos dados, teremos uma resposta.
+    .then(() => {
+      res.send('Post criado com sucesso!');
+    })
+    .catch((err) => {
+      res.send(`Erro ao criar post: ${err}`);
+    });
+});
+
+app.listen(port, () => {
+  console.log(`Example app listening at http://localhost:${port}`);
+});
+```
+
+Após ir na rota /cadastro e enviar os dados para o servidor, temos que seremos redirecionados para a rota /sucesso. A rota /sucesso irá criar um post no banco de dados. Vamos conferir se o post foi criado:
+
+```sql
+mysql> SELECT * FROM postagens;
++----+---------------------+-------------------------+---------------------+---------------------+
+| id | titulo              | conteudo                | createdAt           | updatedAt           |
++----+---------------------+-------------------------+---------------------+---------------------+
+|  1 | JavaScript é legal! | NodeJS é uma delicinha! | 2022-10-29 21:47:15 | 2022-10-29 21:47:15 |
++----+---------------------+-------------------------+---------------------+---------------------+
+1 row in set (0.00 sec)
+```
+
+Como visto o post foi criado com sucesso.
+
+Note que usamos o módulo body-parser para pegar os dados do formulário. O módulo body-parser é um módulo que faz o parse dos dados do formulário. Ele é muito útil para pegar os dados do formulário e passar para o servidor.
+
+## Redirecionando para a pagina home
+
+Para redirecionar para a página home, vamos usar o método redirect do objeto res. O método redirect recebe como parâmetro a rota para onde queremos redirecionar.
+
+```js
+// Importamos o módulo do express
+const express = require('express');
+// Armazenamos a função express em uma constante
+const app = express();
+// Definimos a porta que o servidor irá escutar
+const port = 3000;
+// Importamos o módulo handlebars.
+const handlebars = require('express-handlebars');
+// Importamos o módulo body-parser
+const bodyParser = require('body-parser');
+// Importamos o módulo Post.
+const Post = require('../models/Post');
+
+// Configurações
+// Usando o handlebars como template engine.
+// O main é o nome do arquivo que será o template principal.
+app.engine('handlebars', handlebars.engine({ defaultLayout: 'main' }));
+app.set('view engine', 'handlebars');
+
+// Configurando o body-parser
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+
+// Rotas
+
+// Rota home
+app.get('/', (req, res) => {
+  res.render('home');
+});
+
+app.get('/cadastro', (req, res) => {
+  res.render('formulario');
+});
+
+/* Como usamos o método POST no nosso formulário, é necessário mudar o método na rota. */
+app.post('/sucesso', (req, res) => {
+  // Passamos os dados do formulário para o model Post.
+  Post.create({
+    titulo: req.body.titulo,
+    conteudo: req.body.conteudo,
+  }) // Após o processamento dos dados, teremos uma resposta.
+    .then(() => {
+      // Redirecionamos o usuário para a página home.
+      res.redirect('/');
+    })
+    .catch((err) => {
+      res.send(`Erro ao criar post: ${err}`);
+    });
+});
+
+app.listen(port, () => {
+  console.log(`Example app listening at http://localhost:${port}`);
+});
+```
+
+Note que redirecionamos o usuário para a rota /. Toda vez que o usuário enviar o formulário, ele será redirecionado para a página home. Vamos conferir?
+
+```sql
+mysql> SELECT * FROM postagens;
++----+------------------------+----------------------------------------------+---------------------+---------------------+
+| id | titulo                 | conteudo                                     | createdAt           | updatedAt           |
++----+------------------------+----------------------------------------------+---------------------+---------------------+
+|  1 | JavaScript é legal!    | NodeJS é uma delicinha!                      | 2022-10-29 21:47:15 | 2022-10-29 21:47:15 |
+|  2 | Olá, sou eu novamente! | Adicionamos o redirecionamento nesse post ;) | 2022-10-29 21:54:10 | 2022-10-29 21:54:10 |
++----+------------------------+----------------------------------------------+---------------------+---------------------+
+2 rows in set (0.00 sec)
+```
+
+Como podemos ver, o post foi criado com sucesso e o usuário foi redirecionado para a página home.
