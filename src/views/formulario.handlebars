@@ -1,0 +1,11 @@
+<!-- O atributo action do formulário é o caminho para onde o formulário será enviado -->
+<!-- Há duas formas de envio em HTML: GET e POST-->
+<!-- A diferença é que GET envia os dados pela URL. Não é seguro.-->
+<!-- O método POST envia os dados de uma forma diferente, veremos mais adiante.-->
+<form action='/sucesso' method='POST'>
+  <label for='titulo'>Título</label>
+  <input type='text' name='titulo' />
+  <label for='conteudo'>Conteúdo</label>
+  <textarea name='conteudo'></textarea>
+  <button type='submit'>Cadastrar postagem</button>
+</form>
