@@ -13,6 +13,7 @@ const sequelize = new Sequelize(
   {
     host: process.env.DB_HOST,
     dialect: 'mysql',
+    query: { raw: true },
   }
 );
 // Testa a conexão com o banco de dados.

@@ -25,7 +25,11 @@ app.use(bodyParser.json());
 
 // Rota home
 app.get('/', (req, res) => {
-  res.render('home');
+  // Passamos todos os posts como parâmetro
+  Post.findAll({ order: [['id', 'DESC']] }).then((posts) => {
+    // Passamos o objeto posts para a view home.handlebars
+    res.render('home', { posts: posts });
+  });
 });
 
 app.get('/cadastro', (req, res) => {
@@ -45,6 +49,20 @@ app.post('/sucesso', (req, res) => {
     })
     .catch((err) => {
       res.send(`Erro ao criar post: ${err}`);
+    });
+});
+
+// Deletando postagens
+app.get('/deletar/:id', (req, res) => {
+  // O método destroy recebe um objeto com o id do post que será deletado.
+  // A chave where possui um objeto com o id do post.
+  Post.destroy({ where: { id: req.params.id } })
+    .then(() => {
+      // Redirecionamos o usuário para a página home.
+      res.redirect('/');
+    })
+    .catch((erro) => {
+      res.send('Esta postagem não existe!');
     });
 });
 

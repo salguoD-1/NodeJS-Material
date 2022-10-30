@@ -1,1 +1,11 @@
 <h1>Lista de posts: </h1>
+
+<!-- #each atua como uma estrutura de repetição -->
+{{#each posts}}
+  <h1>{{titulo}}</h1>
+  <p>{{conteudo}}</p>
+  <p>{{createdAt}}</p>
+  <!-- Passams um href com a rota /deletar seguido do id de cada post. -->
+  <a href='/deletar/{{id}}'><button>Deletar Post</button></a>
+  <hr />
+{{/each}}
